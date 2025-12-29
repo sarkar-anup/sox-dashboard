@@ -5,7 +5,7 @@ let users: User[] = [
     { id: '1', name: 'System Admin', email: 'admin@amex.com', role: 'Super Admin', designation: 'Director, Internal Audit' },
     { id: '2', name: 'John Doe', email: 'john.doe@amex.com', role: 'Admin', designation: 'Senior Manager, Finance' },
     { id: '3', name: 'Alice Smith', email: 'alice.smith@amex.com', role: 'Viewer', designation: 'Analyst, Risk Management' },
-    { id: '4', name: 'Bob Jones', email: 'bob.jones@amex.com', role: 'Viewer', designation: 'Associate, Controls' }
+    { id: '4', name: 'Sircar', email: 'sircar@wkyw1.onmicrosoft.com', role: 'Super Admin', designation: 'Platform Owner' }
 ];
 
 let auditLogs: AuditLog[] = [
@@ -17,6 +17,16 @@ export const AdminService = {
     // User Operations
     getUsers: async (): Promise<User[]> => {
         return users;
+    },
+
+    getAdmins: async (): Promise<User[]> => {
+        // For Access Denied page (Regular Admins only)
+        return users.filter(u => u.role === 'Admin');
+    },
+
+    getSupportContacts: async (): Promise<User[]> => {
+        // For Help Popup (All Admins)
+        return users.filter(u => u.role === 'Admin' || u.role === 'Super Admin');
     },
 
     addUser: async (email: string, role: UserRole): Promise<User> => {

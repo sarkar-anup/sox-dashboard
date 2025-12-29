@@ -8,6 +8,30 @@ const router = express.Router();
 // User Management Routes
 // ----------------------------------------------------------------------
 
+// GET /api/admin/contacts (Public - for Unauthorized page - Admins only)
+router.get('/contacts', async (req, res) => {
+    try {
+        const admins = await AdminService.getAdmins();
+        const safeAdmins = admins.map(a => ({ name: a.name, email: a.email, designation: a.designation, avatar: a.avatar }));
+        res.json(safeAdmins);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch contacts' });
+    }
+});
+
+// GET /api/admin/support-contacts (Public/Protected - for Help Popup - All Admins)
+router.get('/support-contacts', async (req, res) => {
+    try {
+        console.log('GET /api/admin/support-contacts hit');
+        const admins = await AdminService.getSupportContacts();
+        console.log('Found admins:', admins.length);
+        const safeAdmins = admins.map(a => ({ name: a.name, email: a.email, designation: a.designation, avatar: a.avatar }));
+        res.json(safeAdmins);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch support contacts' });
+    }
+});
+
 // GET /api/admin/users
 router.get('/users', async (req, res) => {
     try {
