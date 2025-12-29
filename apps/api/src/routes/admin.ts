@@ -1,5 +1,6 @@
 import express from 'express';
 import { AdminService } from '../services/adminService';
+import { EmailService } from '../services/emailService';
 import { UserRole } from '../types/admin';
 
 const router = express.Router();
@@ -42,6 +43,51 @@ router.get('/users', async (req, res) => {
     }
 });
 
+// POST /admin/sync-profile (Called on login to update pending user details)
+router.post('/sync-profile', async (req, res) => {
+    try {
+        const { email, name } = req.body;
+        if (!email || !name) {
+            return res.status(400).json({ error: 'Missing email or name' });
+        }
+        const user = await AdminService.syncUserProfile(email, name);
+        res.json({ success: true, user });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to sync profile' });
+    }
+});
+
+// POST /admin/send-email (Send custom email and log to audit)
+router.post('/send-email', async (req, res) => {
+    try {
+        const { to, subject, body, eventId, senderEmail } = req.body;
+        if (!to || !subject || !body) {
+            return res.status(400).json({ error: 'Missing required fields: to, subject, body' });
+        }
+
+        // Send email
+        const success = await EmailService.sendEmail(to, subject, `<div style="font-family: Arial, sans-serif;">${body.replace(/\n/g, '<br/>')}</div>`);
+
+        // Log to audit trail
+        await AdminService.addAuditLog(
+            senderEmail || 'system',
+            'System',
+            'Email Sent',
+            `Reminder email sent to ${to}${eventId ? ` for event ${eventId}` : ''}: ${subject}`,
+            success ? 'Success' : 'Error'
+        );
+
+        if (success) {
+            res.json({ success: true, message: 'Email sent successfully' });
+        } else {
+            res.json({ success: false, message: 'Email queued (mock mode or credentials missing)' });
+        }
+    } catch (error) {
+        console.error('Send email error:', error);
+        res.status(500).json({ error: 'Failed to send email' });
+    }
+});
+
 // POST /api/admin/users
 // Body: { emails: string[], role: UserRole }
 router.post('/users', async (req, res) => {
@@ -55,6 +101,10 @@ router.post('/users', async (req, res) => {
         for (const email of emails) {
             const user = await AdminService.addUser(email, role || 'Viewer');
             addedUsers.push(user);
+            // Send welcome email (non-blocking)
+            EmailService.sendWelcomeEmail(email).catch(err =>
+                console.warn(`Failed to send welcome email to ${email}:`, err)
+            );
         }
         res.json({ message: `Added ${addedUsers.length} users`, users: addedUsers });
     } catch (error) {

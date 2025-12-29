@@ -31,7 +31,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
                         console.warn("User not found in whitelist. Redirecting to unauthorized.");
                         router.push('/unauthorized');
                     } else {
-                        console.log("User authorized.");
+                        console.log("User authorized. Syncing profile...");
+                        // Sync profile data from SSO
+                        fetch('http://localhost:4000/admin/sync-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: userEmail,
+                                name: session?.user?.name || userEmail?.split('@')[0]
+                            })
+                        }).then(() => console.log("Profile synced.")).catch(err => console.warn("Profile sync failed:", err));
+
                         // If on login page, go to dashboard
                         if (pathname === '/login' || pathname === '/') {
                             router.push('/dashboard');

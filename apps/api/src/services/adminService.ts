@@ -78,5 +78,19 @@ export const AdminService = {
         };
         auditLogs.unshift(newLog);
         return newLog;
+    },
+
+    // Sync user profile from SSO on login
+    syncUserProfile: async (email: string, name: string): Promise<User | undefined> => {
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (user) {
+            // Only update if currently pending
+            if (user.designation === 'N/A (Pending Login)') {
+                user.name = name;
+                user.designation = 'Synced from SSO';
+                console.log(`Profile synced for ${email}`);
+            }
+        }
+        return user;
     }
 };

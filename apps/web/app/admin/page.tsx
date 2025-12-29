@@ -12,8 +12,13 @@ import DownloadIcon from '@mui/icons-material/Download';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+
+const API_BASE = 'http://localhost:4000/admin';
 
 function CustomTabPanel(props: { children?: React.ReactNode; index: number; value: number }) {
     const { children, value, index, ...other } = props;
@@ -25,11 +30,58 @@ function CustomTabPanel(props: { children?: React.ReactNode; index: number; valu
 }
 
 export default function AdminPage() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [tabValue, setTabValue] = React.useState(0);
+    const [userRole, setUserRole] = React.useState<string | null>(null);
+    const [loadingRole, setLoadingRole] = React.useState(true);
+
+    // Fetch current user's role
+    React.useEffect(() => {
+        if (status === 'authenticated' && session?.user?.email) {
+            fetch(`${API_BASE}/users`)
+                .then(res => res.json())
+                .then(users => {
+                    const currentUser = users.find((u: any) =>
+                        u.email?.toLowerCase() === session.user?.email?.toLowerCase()
+                    );
+                    if (currentUser) {
+                        setUserRole(currentUser.role);
+                    }
+                    setLoadingRole(false);
+                })
+                .catch(() => setLoadingRole(false));
+        }
+    }, [status, session]);
+
+    // Block Viewers from accessing this page
+    React.useEffect(() => {
+        if (!loadingRole && userRole === 'Viewer') {
+            router.push('/dashboard');
+        }
+    }, [loadingRole, userRole, router]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setTabValue(newValue);
     };
+
+    // Show loading while checking role
+    if (loadingRole || status === 'loading') {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    // Block Viewers
+    if (userRole === 'Viewer') {
+        return (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+                <Alert severity="error">You do not have permission to access the Admin Portal.</Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ width: '100%', maxWidth: 1200, mx: 'auto', p: 3 }}>
@@ -62,8 +114,6 @@ export default function AdminPage() {
 // ----------------------------------------------------------------------
 // Sub-components
 // ----------------------------------------------------------------------
-
-const API_BASE = 'http://localhost:4000/admin';
 
 function DataIngestSection() {
     const [previewData, setPreviewData] = React.useState<any[]>([]);
@@ -253,30 +303,43 @@ function AuditTrailSection() {
     );
 }
 
-import { useSession } from 'next-auth/react';
-
-// ...
-
 function UserManagementSection() {
     const { data: session } = useSession();
     const [emailInput, setEmailInput] = React.useState('');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [users, setUsers] = React.useState<any[]>([]);
+    const [currentUserRole, setCurrentUserRole] = React.useState<string>('Viewer');
 
-    // Use actual logic to determine if current user is Super Admin (client-side check only for UI, backend enforces security)
-    const currentUserRole: string = 'Super Admin'; // In real app, this should come from session too if extended
     const currentUserEmail = session?.user?.email?.toLowerCase();
 
     const fetchUsers = () => {
         fetch(`${API_BASE}/users`)
             .then(res => res.json())
-            .then(data => setUsers(data))
+            .then(data => {
+                setUsers(data);
+                // Find current user's role from fetched users
+                const me = data.find((u: any) => u.email?.toLowerCase() === currentUserEmail);
+                if (me) {
+                    setCurrentUserRole(me.role);
+                }
+            })
             .catch(err => console.error("Failed users", err));
     };
 
     React.useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [currentUserEmail]);
+
+    // Permission helpers
+    const canManageUser = (targetRole: string): boolean => {
+        // Super Admin can manage everyone
+        if (currentUserRole === 'Super Admin') return true;
+        // Admin can only manage Viewers
+        if (currentUserRole === 'Admin' && targetRole === 'Viewer') return true;
+        return false;
+    };
+
+    const canAddUsers = currentUserRole === 'Super Admin' || currentUserRole === 'Admin';
 
     // Filter Users
     const filteredUsers = users.filter(u =>
@@ -330,27 +393,28 @@ function UserManagementSection() {
                 </Typography>
             </Box>
 
-            {/* Add User Section */}
-            <Paper sx={{ p: 3, bgcolor: '#fff' }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>Add New Users</Typography>
-                <Stack direction="row" spacing={2}>
-                    <input
-                        type="text"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="Enter email addresses (comma separated)"
-                        style={{ flexGrow: 1, padding: '12px', borderRadius: '4px', border: '1px solid #c4cdd5', fontSize: '1rem' }}
-                    />
-                    <Button
-                        variant="contained"
-                        onClick={handleAddUsers}
-                        sx={{ px: 4, bgcolor: '#006FCF' }}
-                        disabled={currentUserRole !== 'Super Admin' && currentUserRole !== 'Admin'}
-                    >
-                        Add Users
-                    </Button>
-                </Stack>
-            </Paper>
+            {/* Add User Section - Only visible to Admins/Super Admins */}
+            {canAddUsers && (
+                <Paper sx={{ p: 3, bgcolor: '#fff' }}>
+                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>Add New Users</Typography>
+                    <Stack direction="row" spacing={2}>
+                        <input
+                            type="text"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder="Enter email addresses (comma separated)"
+                            style={{ flexGrow: 1, padding: '12px', borderRadius: '4px', border: '1px solid #c4cdd5', fontSize: '1rem' }}
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={handleAddUsers}
+                            sx={{ px: 4, bgcolor: '#006FCF' }}
+                        >
+                            Add Users
+                        </Button>
+                    </Stack>
+                </Paper>
+            )}
 
             <Divider />
 
@@ -402,15 +466,14 @@ function UserManagementSection() {
                             {/* Actions / Role */}
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 {/* Role Dropdown (Only visible if you have permission to edit this user) */}
-                                {(currentUserRole === 'Super Admin' || (currentUserRole === 'Admin' && u.role === 'Viewer')) && u.id !== '1' ? (
+                                {canManageUser(u.role) && u.email.toLowerCase() !== currentUserEmail ? (
                                     <select
                                         value={u.role}
                                         onChange={(e) => handleRoleChange(u.id, e.target.value)}
                                         style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.85rem' }}
-                                        disabled={currentUserRole === 'Admin' && u.role === 'Super Admin'} // Admin cannot touch Super Admin
                                     >
                                         <option value="Viewer">Viewer</option>
-                                        <option value="Admin">Admin</option>
+                                        {currentUserRole === 'Super Admin' && <option value="Admin">Admin</option>}
                                         {currentUserRole === 'Super Admin' && <option value="Super Admin">Super Admin</option>}
                                     </select>
                                 ) : (
@@ -425,8 +488,8 @@ function UserManagementSection() {
                                     </Box>
                                 )}
 
-                                {/* Remove Button */}
-                                {(currentUserRole === 'Super Admin' || (currentUserRole === 'Admin' && u.role === 'Viewer')) && u.id !== '1' && (
+                                {/* Remove Button - Only show if can manage and not self */}
+                                {canManageUser(u.role) && u.email.toLowerCase() !== currentUserEmail && (
                                     <Button size="small" color="error" onClick={() => handleRemoveUser(u.id)}>Remove</Button>
                                 )}
                             </Box>

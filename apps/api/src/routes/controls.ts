@@ -57,4 +57,16 @@ router.get('/', (req, res) => {
     });
 });
 
+// GET /controls/:id - Get single control by ID
+router.get('/:id', (req, res) => {
+    const { id } = req.params;
+    const control = MOCK_CONTROLS.find(c => c.ControlId === id);
+
+    if (!control) {
+        return res.status(404).json({ error: 'Control not found' });
+    }
+
+    res.json(control);
+});
+
 export default router;

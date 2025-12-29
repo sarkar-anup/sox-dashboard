@@ -79,6 +79,7 @@ const generateControls = (count: number): ControlRow[] => {
             TestTitle: `Test of ${template.title}`,
             TestProcedure: `Verify evidence for ${template.title} in accordance with policy...`,
             ControlOwner: owners[i % owners.length],
+            ControlOwnerEmail: `${owners[i % owners.length].toLowerCase().replace(' ', '.')}@amex.com`,
             TestPerformer: owners[(i + 1) % owners.length],
             Quarter: q,
             DueDate: dateStr,

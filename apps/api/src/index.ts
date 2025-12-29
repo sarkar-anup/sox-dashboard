@@ -1,13 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env from the api folder explicitly
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import healthRouter from './routes/health';
 import controlsRouter from './routes/controls';
 import kpisRouter from './routes/kpis';
 import calendarRouter from './routes/calendar';
 import adminRouter from './routes/admin';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
