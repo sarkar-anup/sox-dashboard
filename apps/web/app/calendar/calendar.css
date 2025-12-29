@@ -1,0 +1,5 @@
+/* Custom overrides if needed, mostly doing via Sx */
+.fc {
+  --fc-border-color: #444;
+  --fc-page-bg-color: #1e1e1e;
+}
