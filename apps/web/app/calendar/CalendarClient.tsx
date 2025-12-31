@@ -9,6 +9,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import EmailIcon from '@mui/icons-material/Email';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { apiClient } from '../services/apiClient';
 import { CalendarEvent, CalendarResponse } from '../types';
 import ControlsCalendar from './ControlsCalendar';
@@ -18,6 +19,7 @@ import EmailBuilderDialog from '../components/EmailBuilderDialog';
 export default function CalendarClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
     const [selectedEvent, setSelectedEvent] = React.useState<any>(null);
     const [events, setEvents] = React.useState<CalendarEvent[]>([]);
     const [loading, setLoading] = React.useState(true);
@@ -248,23 +250,25 @@ export default function CalendarClient() {
                         {/* Footer Actions */}
                         <Box sx={{ p: 3, bgcolor: '#fff', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                             <Stack spacing={2}>
-                                <Button
-                                    fullWidth
-                                    variant="outlined"
-                                    size="large"
-                                    startIcon={<EmailIcon />}
-                                    onClick={() => setEmailDialogOpen(true)}
-                                    disabled={selectedEvent?.status === 'Completed'}
-                                    sx={{
-                                        borderColor: '#006FCF',
-                                        color: '#006FCF',
-                                        fontWeight: 600,
-                                        '&:hover': { borderColor: '#005bb5', bgcolor: 'rgba(0, 111, 207, 0.05)' },
-                                        '&.Mui-disabled': { borderColor: '#ccc', color: '#999' }
-                                    }}
-                                >
-                                    {selectedEvent?.status === 'Completed' ? 'Event Completed' : 'Send Reminder'}
-                                </Button>
+                                {((session?.user as any)?.role === 'Admin' || (session?.user as any)?.role === 'Super Admin') && (
+                                    <Button
+                                        fullWidth
+                                        variant="outlined"
+                                        size="large"
+                                        startIcon={<EmailIcon />}
+                                        onClick={() => setEmailDialogOpen(true)}
+                                        disabled={selectedEvent?.status === 'Completed'}
+                                        sx={{
+                                            borderColor: '#006FCF',
+                                            color: '#006FCF',
+                                            fontWeight: 600,
+                                            '&:hover': { borderColor: '#005bb5', bgcolor: 'rgba(0, 111, 207, 0.05)' },
+                                            '&.Mui-disabled': { borderColor: '#ccc', color: '#999' }
+                                        }}
+                                    >
+                                        {selectedEvent?.status === 'Completed' ? 'Event Completed' : 'Send Reminder'}
+                                    </Button>
+                                )}
                                 <Button
                                     fullWidth
                                     variant="contained"
@@ -292,7 +296,7 @@ export default function CalendarClient() {
                 prefill={{
                     to: selectedEvent?.ownerEmail || '',
                     subject: `Action Required: ${selectedEvent?.id || 'Control'} - ${selectedEvent?.title || 'Certification'} (Due: ${selectedEvent?.dueDate || selectedEvent?.date || 'TBD'})`,
-                    body: `Dear ${selectedEvent?.owner || 'Team'},
+                    body: `Hi All,
 
 This is a reminder regarding the following control certification that requires your attention:
 
