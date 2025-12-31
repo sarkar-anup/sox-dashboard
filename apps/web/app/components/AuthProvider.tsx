@@ -44,7 +44,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
-        <SessionProvider session={MOCK_SESSION}>
+        <SessionProvider
+            session={MOCK_SESSION}
+            refetchInterval={0}
+            refetchOnWindowFocus={false}
+            refetchWhenOffline={false}
+        >
             <AuthGuard>
                 {children}
             </AuthGuard>
