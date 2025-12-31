@@ -41,6 +41,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const { data: session, status } = useSession();
 
+    // Filter menu items based on role
+    // Default to 'Viewer' permissions if role is missing, but our mock provides 'Admin'
+    const role = (session?.user as any)?.role || 'Viewer';
+
+    // Only Show Admin Portal to Admin or Super Admin
+    const filteredMenuItems = MENU_ITEMS.filter(item => {
+        if (item.text === 'Admin Portal') {
+            return role === 'Admin' || role === 'Super Admin';
+        }
+        return true;
+    });
+
     // Hide AppShell (Sidebar/Header) on Login/Public pages
     if (pathname === '/login' || pathname === '/unauthorized') {
         return (

@@ -5,110 +5,133 @@ import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import SvgIcon from '@mui/material/SvgIcon';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
-export default function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-    const [contacts, setContacts] = React.useState<any[]>([]);
+// Icons
+import HelpCenterIcon from '@mui/icons-material/HelpCenter';
+import CloseIcon from '@mui/icons-material/Close';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+
+interface HelpDialogProps {
+    open: boolean;
+    onClose: () => void;
+}
+
+// Static Support Contacts
+const SUPPORT_CONTACTS = [
+    { name: "Sarah Jenkins", email: "sarah.jenkins@amex.com", designation: "SOX Compliance Lead", slack: "https://slack.com" },
+    { name: "Michael Chen", email: "michael.chen@amex.com", designation: "Technical Support", slack: "https://slack.com" },
+    { name: "Priya Patel", email: "priya.patel@amex.com", designation: "Process Owner", slack: "https://slack.com" },
+    { name: "David Smith", email: "david.smith@amex.com", designation: "Audit Manager", slack: "https://slack.com" }
+];
+
+export default function HelpDialog({ open, onClose }: HelpDialogProps) {
     const router = useRouter();
-
-    React.useEffect(() => {
-        if (open) {
-            console.log("Fetching support contacts...");
-            fetch('http://127.0.0.1:4000/admin/support-contacts')
-                .then(res => res.json())
-                .then(data => {
-                    console.log("Contacts received:", data);
-                    setContacts(data || []);
-                })
-                .catch(err => console.error("Failed to fetch contacts", err));
-        }
-    }, [open]);
-
-    // ... inside render ... 
-    // inside DialogContent, replace current Stack with:
-    /*
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    Support Contacts
-                </Typography>
-                {contacts.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        No support contacts available. Please contact admin@amex.com.
-                    </Typography>
-                ) : (
-                    <Stack spacing={2}>
-                       ... existing map ...
-                    </Stack>
-                )}
-    */
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{ fontWeight: 700, color: '#00175A' }}>Help & Support</DialogTitle>
-            <DialogContent>
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#00175A', color: 'white' }}>
+                <HelpCenterIcon />
+                Help & Support
+                <IconButton onClick={onClose} sx={{ ml: 'auto', color: 'rgba(255,255,255,0.7)' }}>
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+            <DialogContent dividers>
+                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                    Need Assistance?
+                </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                    Need assistance? You can view the user guide or contact an administrator below.
+                    If you encounter any issues or have questions regarding the SOX controls, please reach out to the Risk & Compliance team below.
                 </Typography>
 
-                <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={() => { onClose(); router.push('/user-guide'); }}
-                    sx={{ mb: 3, bgcolor: '#006FCF' }}
-                >
-                    Open User Guide
-                </Button>
-
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    Support Contacts
-                </Typography>
-                <Stack spacing={2}>
-                    {contacts.length === 0 && (
-                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', p: 1 }}>
-                            No publicly listed administrators found.
-                        </Typography>
-                    )}
-                    {contacts.map((contact, idx) => (
-                        <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, border: '1px solid #eee', borderRadius: 2 }}>
-                            <Box sx={{ width: 40, height: 40, borderRadius: '50%', bgcolor: '#e3f2fd', color: '#1565c0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
-                                {contact.name ? contact.name.charAt(0) : 'A'}
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                    {SUPPORT_CONTACTS.map((contact, index) => (
+                        <Box key={index} sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            p: 2,
+                            border: '1px solid #eee',
+                            borderRadius: 2,
+                            '&:hover': { bgcolor: '#f5f9ff', borderColor: '#006FCF' }
+                        }}>
+                            <Box sx={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: '50%',
+                                bgcolor: '#e3f2fd',
+                                color: '#006FCF',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 700,
+                                fontSize: '1.2rem'
+                            }}>
+                                {contact.name.charAt(0)}
                             </Box>
-                            <Box>
-                                <Typography variant="subtitle2" fontWeight={600}>{contact.name}</Typography>
-                                <Typography variant="caption" display="block" color="text.secondary">{contact.email}</Typography>
-                                {contact.designation && <Typography variant="caption" display="block" color="text.secondary" sx={{ fontStyle: 'italic' }}>{contact.designation}</Typography>}
+                            <Box sx={{ flexGrow: 1 }}>
+                                <Typography variant="subtitle2" fontWeight={700}>
+                                    {contact.name}
+                                </Typography>
+                                <Typography variant="caption" display="block" color="text.secondary">
+                                    {contact.designation}
+                                </Typography>
+                                <Typography variant="caption" display="block" color="primary">
+                                    {contact.email}
+                                </Typography>
                             </Box>
-                            <Box sx={{ flexGrow: 1 }} />
-                            <Tooltip title="Contact on Slack">
-                                <IconButton
-                                    component="a"
-                                    href="https://slack.com"
-                                    target="_blank"
-                                    sx={{ color: '#4A154B' }} // Slack Purple
-                                >
-                                    <Image
-                                        src="/icons/slack_logo.png"
-                                        alt="Slack"
-                                        width={20}
-                                        height={20}
-                                        style={{ objectFit: 'contain' }}
-                                    />
-                                </IconButton>
-                            </Tooltip>
+                            <Stack direction="row" spacing={1}>
+                                <Tooltip title="Chat on Slack">
+                                    <IconButton
+                                        size="small"
+                                        component="a"
+                                        href={contact.slack}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={{
+                                            bgcolor: 'white',
+                                            border: '1px solid #eee',
+                                            padding: 0.5,
+                                            '&:hover': { bgcolor: '#f5f5f5' }
+                                        }}
+                                    >
+                                        <Image
+                                            src="/icons/slack_logo.png"
+                                            alt="Slack"
+                                            width={20}
+                                            height={20}
+                                        />
+                                    </IconButton>
+                                </Tooltip>
+                            </Stack>
                         </Box>
                     ))}
                 </Stack>
+
+                <Box sx={{ mt: 4, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                        Additional Resources
+                    </Typography>
+                    <List dense disablePadding>
+                        <ListItem disablePadding sx={{ mb: 1 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}><MenuBookIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText
+                                primary={<a href="/user-guide" onClick={(e) => { e.preventDefault(); onClose(); router.push('/user-guide'); }} style={{ color: '#006FCF', textDecoration: 'none', cursor: 'pointer' }}>User Guide Documentation</a>}
+                            />
+                        </ListItem>
+                    </List>
+                </Box>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Close</Button>
-            </DialogActions>
         </Dialog>
     );
 }

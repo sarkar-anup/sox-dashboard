@@ -29,23 +29,47 @@ export default function LoginPage() {
                     SOX Dashboard
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                    Please sign in with your American Express ID to continue.
+                    Welcome to the SOX Dashboard. Access is restricted to authorized personnel.
                 </Typography>
 
                 <Button
                     variant="contained"
                     fullWidth
                     size="large"
-                    onClick={() => signIn('azure-ad', { callbackUrl: '/dashboard' })}
+                    onClick={() => signIn('credentials', {
+                        username: 'Admin User',
+                        role: 'Admin',
+                        callbackUrl: '/dashboard'
+                    })}
                     sx={{
                         bgcolor: '#006FCF',
+                        py: 1.5,
+                        mb: 2,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        fontWeight: 600
+                    }}
+                >
+                    Enter as Admin
+                </Button>
+
+                <Button
+                    variant="outlined"
+                    fullWidth
+                    size="large"
+                    onClick={() => signIn('credentials', {
+                        username: 'Viewer User',
+                        role: 'Viewer',
+                        callbackUrl: '/dashboard'
+                    })}
+                    sx={{
                         py: 1.5,
                         textTransform: 'none',
                         fontSize: '1rem',
                         fontWeight: 600
                     }}
                 >
-                    Sign in with Microsoft
+                    Enter as Viewer
                 </Button>
             </Paper>
         </Box>

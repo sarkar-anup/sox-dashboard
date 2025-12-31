@@ -37,20 +37,15 @@ export default function AdminPage() {
     const [loadingRole, setLoadingRole] = React.useState(true);
 
     // Fetch current user's role
+    // Check role directly from session
     React.useEffect(() => {
-        if (status === 'authenticated' && session?.user?.email) {
-            fetch(`${API_BASE}/users`)
-                .then(res => res.json())
-                .then(users => {
-                    const currentUser = users.find((u: any) =>
-                        u.email?.toLowerCase() === session.user?.email?.toLowerCase()
-                    );
-                    if (currentUser) {
-                        setUserRole(currentUser.role);
-                    }
-                    setLoadingRole(false);
-                })
-                .catch(() => setLoadingRole(false));
+        if (status === 'authenticated') {
+            const role = (session?.user as any)?.role || 'Viewer';
+            setUserRole(role);
+            setLoadingRole(false);
+        } else if (status === 'unauthenticated') {
+            // Should be handled by AuthGuard but safe fallback
+            setLoadingRole(false);
         }
     }, [status, session]);
 
@@ -93,10 +88,9 @@ export default function AdminPage() {
             </Typography>
 
             <Paper sx={{ width: '100%', mb: 2, borderRadius: 2, overflow: 'hidden' }}>
-                <Tabs value={tabValue} onChange={handleTabChange} sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#fff' }}>
-                    <Tab label="Data Management" sx={{ fontWeight: 600 }} />
-                    <Tab label="User Access" sx={{ fontWeight: 600 }} />
-                </Tabs>
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', bgcolor: '#fff', fontWeight: 600, color: '#00175A' }}>
+                    Data Management
+                </Box>
 
                 <Box sx={{ p: 4, bgcolor: '#F9FAFB', minHeight: 400 }}>
                     <CustomTabPanel value={tabValue} index={0}>

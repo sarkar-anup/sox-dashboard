@@ -1,28 +1,44 @@
-import NextAuth from "next-auth";
-import AzureADProvider from "next-auth/providers/azure-ad";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 const handler = NextAuth({
     debug: true,
     providers: [
-        AzureADProvider({
-            clientId: process.env.AZURE_AD_CLIENT_ID || '',
-            clientSecret: process.env.AZURE_AD_CLIENT_SECRET || '',
-            tenantId: process.env.AZURE_AD_TENANT_ID || '',
-        }),
+        CredentialsProvider({
+            name: 'Mock Login',
+            credentials: {
+                username: { label: "Username", type: "text" },
+                role: { label: "Role", type: "text" }
+            },
+            async authorize(credentials) {
+                // Return a mock user based on input or default
+                const role = credentials?.role || 'Admin';
+                const name = credentials?.username || 'Test User';
+
+                return {
+                    id: 'mock-user-id',
+                    name: name,
+                    email: `${name.toLowerCase().replace(' ', '.')}@amex.com`,
+                    image: null,
+                    role: role // Pass role to be captured in session callback
+                };
+            }
+        })
     ],
     pages: {
         signIn: '/login',
     },
     callbacks: {
-        async jwt({ token, account }) {
-            // Persist the OAuth access_token to the token right after signin
-            if (account) {
-                token.accessToken = account.access_token;
+        async jwt({ token, user, trigger, session }) {
+            if (user) {
+                token.role = (user as any).role;
             }
             return token;
         },
-        async session({ session, token, user }) {
-            // Send properties to the client, like an access_token from a provider.
+        async session({ session, token }) {
+            if (session.user) {
+                (session.user as any).role = token.role;
+            }
+            // Mock permissions based on role
             return session;
         }
     }
