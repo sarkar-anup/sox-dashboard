@@ -128,7 +128,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Toolbar />
                 <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
                     <List>
-                        {MENU_ITEMS.map((item) => {
+                        {filteredMenuItems.map((item) => {
                             const isSelected = pathname.startsWith(item.path);
                             return (
                                 <ListItem key={item.text} disablePadding>

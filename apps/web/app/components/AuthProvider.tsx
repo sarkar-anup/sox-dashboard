@@ -1,41 +1,51 @@
 'use client';
 
-import { SessionProvider, useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { SessionProvider, useSession, signIn } from "next-auth/react";
+import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-
-// MOCK SESSION - Simulates SSO-authenticated user (Admin)
-// Change role to 'Viewer' to test Viewer access
-const MOCK_SESSION = {
-    user: {
-        name: 'SOX Admin',
-        email: 'admin@amex.com',
-        image: null,
-        role: 'Admin'
-    },
-    expires: '2099-01-01T00:00:00.000Z'
-};
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
     const router = useRouter();
     const pathname = usePathname();
+    const autoLoginAttempted = useRef(false);
 
     useEffect(() => {
-        // Redirect to dashboard if trying to access login page while "authenticated"
+        if (status === 'loading') return;
+
         if (status === 'authenticated') {
+            // Already logged in
             if (pathname === '/login' || pathname === '/') {
                 router.push('/dashboard');
             }
         } else if (status === 'unauthenticated') {
-            // Forcing dashboard even if unauthenticated because we are mocking SSO
-            if (pathname === '/login' || pathname === '/') router.push('/dashboard');
-        }
-    }, [status, session, pathname, router]);
+            // Not logged in
 
-    if (status === 'loading' && !session) {
+            // If user is accessing '/' or '/dashboard', assume it's an SSO access -> Auto Login as Admin
+            if (pathname !== '/login') {
+                if (!autoLoginAttempted.current) {
+                    console.log("Simulating SSO Login...");
+                    autoLoginAttempted.current = true;
+                    // Auto-login as Admin via Credentials Provider
+                    signIn('credentials', {
+                        username: 'SSO Admin',
+                        role: 'Admin',
+                        redirect: false
+                    }).then(() => {
+                        // Page will re-render with status 'authenticated'
+                    });
+                } else {
+                    // Fallback if sign-in fails or takes time; prevent infinite loop
+                    // router.push('/login'); 
+                }
+            }
+            // If user is on /login, DO NOTHING. Let them click buttons.
+        }
+    }, [status, pathname, router]);
+
+    if (status === 'loading') {
         return <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CircularProgress /></Box>;
     }
 
@@ -44,12 +54,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
-        <SessionProvider
-            session={MOCK_SESSION}
-            refetchInterval={0}
-            refetchOnWindowFocus={false}
-            refetchWhenOffline={false}
-        >
+        <SessionProvider>
             <AuthGuard>
                 {children}
             </AuthGuard>
